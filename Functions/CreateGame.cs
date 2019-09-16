@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -10,48 +11,62 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
-namespace Fourzy
+namespace FourzyAzureFunctions
 {
     public static class CreateGame
     {
         [FunctionName("CreateGame")]
-        public static HttpResponseMessage Run(
+        public static object Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequestMessage req,
             [CosmosDB(databaseName: "fourzy", collectionName: "games", ConnectionStringSetting = "fourzyConnection")] out Game game,
             ILogger log)
         {
-            log.LogInformation("C# HTTP trigger function processed a request.");
+            log.LogInformation("C# HTTP trigger function processed a CreateGame request.");
 
             // Inputs: playerid, area, optional: opponent playerid
             // Outputs: Gameboard, player to play first
 
-            // string name = req.Query["name"];
+            // string playerid = req.Query["playerid"];
+            // string area = req.Query["area"];
+            // string opponentid = req.Query["opponentid"];
 
-            // Get player info from Playfab player table
+            // TODO: Get player display name from Playfab
 
-            // Call matchmaking with playerid
-            // Matchmaking returns
-            // Opponent playerid
-            // Gameboard - the Gameboard is generated
-
-            // get opponent info from Playfab
-
-
+            // // Get Opponent from Matchmaker if CreateGame is called without an opponent
+            // if (opponentid == null)
+            // {
+            //     opponentid = GetOpponent(playerId, area);
+            // }
             
-            var content = req.Content; 
-            string jsonContent = content.ReadAsStringAsync().Result; 
-            game = JsonConvert.DeserializeObject<Game>(jsonContent);
-            // game = new Game {Board="TEST",Player1="player1", Player2="player2"};
-            
-            return new HttpResponseMessage(HttpStatusCode.Created);
+            // TODO: Get opponent display name from Playfab
 
-            // return name != null
-            //     ? (ActionResult)new OkObjectResult($"Hello, {name}")
-            //     : new BadRequestObjectResult("Please pass a name on the query string or in the request body");
+            string gameStateData = CreateGameState(new Player(), new Player());
+
+            var content = req.Content;
+            game = new Game();
+            // game.Id = "0";
+            game.GameStateData = content.ReadAsStringAsync().Result;
+            game.GameStateDataCurrent = content.ReadAsStringAsync().Result;
+            game.PlayerTurnRecord = new List<string> ();
+            game.FirstPlayerId = "0";
+
+            // game = JsonConvert.DeserializeObject<Game>(jsonContent);
+
+            if (game != null)
+            {
+                return req.CreateResponse(HttpStatusCode.OK, game);
+            } else {
+                return req.CreateResponse(HttpStatusCode.BadRequest, new {
+                    error = "Error creating game state"
+                });
+            }
+            
+            // return new HttpResponseMessage(HttpStatusCode.Created);
         }
 
-        public static string Matchmaking(string playerId, string area) 
+        public static string GetOpponent(string playerId, string area) 
         {
+            // TODO: Create a collection in CosmosDb for the matchmaking pool
             // if player does not exist in matchmaking pool and turn-based games optin is on, add player to pool
             
             // last turn is within the last 7 days, lastTurnTimestamp
@@ -61,11 +76,9 @@ namespace Fourzy
             var opponentID = "";
 
             return opponentID;
-
-            // generate gameboard from game model service
         }
 
-        public static void CreateGameState()
+        public static string CreateGameState(Player player, Player opponent)
         {
             //***** Call gamemodel service -> createGame using info from both players *****
 
@@ -99,6 +112,8 @@ namespace Fourzy
             // var responseJson = response.getResponseJson();
 
             // gameStateData = responseJson.gameStateData;
+
+            return "{'placeholder gameStateData'}";
         }
     }
 }

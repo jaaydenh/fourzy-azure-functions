@@ -27,8 +27,6 @@ namespace FourzyAzureFunctions
             // dynamic data = JsonConvert.DeserializeObject(requestBody);
             // name = name ?? data?.name;
 
-            game = new Game {Board="TEST",Player1="player1", Player2="player2"};
-
             return new HttpResponseMessage(HttpStatusCode.Created);
         }
     }
