@@ -2,6 +2,11 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "type": "func",
+            "command": "start -build",
+            "problemMatcher": []
+        },
+        {
             "label": "clean",
             "command": "dotnet clean",
             "type": "shell",
@@ -33,9 +38,14 @@
         },
         {
             "type": "func",
+            "command": "extensions install",
+            "problemMatcher": []
+        },
+        {
+            "type": "func",
             "dependsOn": "build",
             "options": {
-                "cwd": "${workspaceFolder}/bin/Debug/netcoreapp2.1"
+                "cwd": "${workspaceFolder}/bin/Debug/netcoreapp3.0"
             },
             "command": "host start",
             "isBackground": true,

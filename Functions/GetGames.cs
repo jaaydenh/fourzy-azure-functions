@@ -15,7 +15,7 @@ namespace FourzyAzureFunctions
     public static class GetGames
     {
         [FunctionName("GetGames")]
-        public static HttpResponseMessage Run(
+        public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
             ILogger log)
         {
@@ -23,11 +23,13 @@ namespace FourzyAzureFunctions
 
             string name = req.Query["name"];
 
-            // string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            // dynamic data = JsonConvert.DeserializeObject(requestBody);
-            // name = name ?? data?.name;
+            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+            dynamic data = JsonConvert.DeserializeObject(requestBody);
+            name = name ?? data?.name;
 
-            return new HttpResponseMessage(HttpStatusCode.Created);
+            return name != null
+                ? (ActionResult)new OkObjectResult($"Hello, {name}")
+                : new BadRequestObjectResult("Please pass a name on the query string or in the request body");
         }
     }
 }

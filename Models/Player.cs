@@ -3,10 +3,10 @@ using Newtonsoft.Json;
 public class Player
 {
         [JsonProperty("playerId")]
-        public int PlayerId { get; }
+        public int PlayerId { get; set; }
 
         [JsonProperty("displayName")]
-        public string DisplayName { get; }
+        public string DisplayName { get; set;}
 
         [JsonProperty("herdId")]
         public string HerdId { get; set; }
