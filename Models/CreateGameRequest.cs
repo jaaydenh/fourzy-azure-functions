@@ -4,10 +4,13 @@ namespace FourzyAzureFunctions
 {
     public class CreateGameRequest
     {
-        [JsonProperty("player")]
-        public Player Player { get; set; }
+        [JsonProperty("playerId")]
+        public string PlayerId { get; set; }
 
-        [JsonProperty("opponent")]
-        public Player Opponent { get; set; }
+        [JsonProperty("opponentId")]
+        public string OpponentId { get; set; }
+                
+        [JsonProperty("area")]
+        public Area Area { get; set; }
     }
 }
