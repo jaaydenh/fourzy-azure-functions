@@ -33,7 +33,7 @@ namespace FourzyAzureFunctions
             var options = new FeedOptions { EnableCrossPartitionQuery = true }; // Enable cross partition query
         
             IDocumentQuery<Game> query = client.CreateDocumentQuery<Game>(gameCollectionUri, options)
-                                                .Where(game => game.FirstPlayerId == playerId)
+                                                .Where(game => game.InitialGameStateData.Players[0].PlayerString == playerId)
                                                 .AsDocumentQuery();
         
             var gamesForStore = new List<Game>();

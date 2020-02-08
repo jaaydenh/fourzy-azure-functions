@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using FourzyGameModel.Model;
 
 namespace FourzyAzureFunctions
 {
@@ -17,7 +18,7 @@ namespace FourzyAzureFunctions
             client = new HttpClient();
         }
 
-        public static async Task<string> CreateGameState(FourzyGameModel.Model.CreateGameRequest createGameReq, CancellationToken token)
+        public static async Task<GameStateData> CreateGameState(FourzyGameModel.Model.CreateGameRequest createGameReq, CancellationToken token)
         {
             var json = JsonConvert.SerializeObject(createGameReq);
 
@@ -27,12 +28,14 @@ namespace FourzyAzureFunctions
             
             var content = await response.Content.ReadAsStringAsync();
 
+            FourzyGameModel.Model.CreateGameResponse createGameResponse = JsonConvert.DeserializeObject<FourzyGameModel.Model.CreateGameResponse>(content);
+
             if (!response.IsSuccessStatusCode)
             {
                 throw new HttpRequestException(response.StatusCode + " : " + response.ReasonPhrase);
             }
 
-            return content;
+            return createGameResponse.GameStateData;
         }
     }
 }

@@ -1,17 +1,14 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.AspNetCore.Http;
-using FourzyGameModel;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using FourzyGameModel.Model;
 
 namespace FourzyAzureFunctions
 {
@@ -28,66 +25,40 @@ namespace FourzyAzureFunctions
             {
                 log.LogInformation("C# HTTP trigger function processed a CreateGame request.");
             
-                // Inputs: playerid, area, opponentId (if no opponentId, this will trigger the matchmaker)
-                // Outputs: GameState, FirstPlayerId
+                // Inputs: playerid
+                // Outputs: GameState
 
                 string reqContent = req.Content.ReadAsStringAsync().Result;
 
-                CreateGameRequest createGameReq = JsonConvert.DeserializeObject<CreateGameRequest>(reqContent);
-
-                // TODO: Get player display name from Playfab
-
-                // Create Player
-                FourzyGameModel.Model.Player player = new FourzyGameModel.Model.Player();
-                player.PlayerId = 1;
-                player.PlayerString = createGameReq.PlayerId;
-                player.DisplayName = "Player One Test";
-                player.HerdId = "1";
-                player.Magic = 100;
-                player.SelectedArea = Area.TRAINING_GARDEN;
-                FourzyGameModel.Model.PlayerExperience pex1 = new FourzyGameModel.Model.PlayerExperience();
-                player.Experience = pex1;
-
-                // Create Opponent
-                var opponentID = createGameReq.OpponentId;
-                // Get Opponent from Matchmaker if CreateGame is called without an opponent
-                if (createGameReq.OpponentId == null)
-                {
-                    // TODO: GetOpponent from Matchmaker
-                    // opponentid = GetOpponent(playerId, area);
-                }
-                // TODO: Get opponent info from Playfab
-
-                FourzyGameModel.Model.Player opponent = new FourzyGameModel.Model.Player();
-                opponent.PlayerId = 2;
-                opponent.PlayerString = createGameReq.OpponentId;
-                opponent.DisplayName = "Player Two Test";
-                opponent.HerdId = "1";
-                opponent.Magic = 100;
-                opponent.SelectedArea = Area.TRAINING_GARDEN;
-                FourzyGameModel.Model.PlayerExperience pex2 = new FourzyGameModel.Model.PlayerExperience();
-                opponent.Experience = pex2;
+                CreateGameRequest createGameRequest = JsonConvert.DeserializeObject<CreateGameRequest>(reqContent);
                 
+                log.LogInformation("PlayFab Player Profile: " + PlayFabHelpers.GetPlayerProfile(createGameRequest.PlayerId, token));
+
                 // Assign Player and Opponent
                 FourzyGameModel.Model.CreateGameRequest request = new FourzyGameModel.Model.CreateGameRequest();
-                request.Player = player;
-                request.Opponent = opponent;
+                // TODO: Get both players displaynames from Playfab
+                request.Player = CreateMockPlayer(1, createGameRequest.PlayerId, "Player One Test");;
+                var opponentID = GetOpponent(createGameRequest.PlayerId, Area.TRAINING_GARDEN);
+                request.Opponent = CreateMockPlayer(2, opponentID, "Player Two Test");
 
-                string gameStateData = await CreateGameHelpers.CreateGameState(request, token);
+                GameStateData gameStateData = await CreateGameHelpers.CreateGameState(request, token);
 
-                log.LogInformation("gameStateData: " + gameStateData.ToString());
+                // log.LogInformation("gameStateData: " + gameStateData.ToString());
 
                 var newGame = new Game();
-                newGame.GameStateData = gameStateData;
-                newGame.PlayerTurnRecord = new List<string> ();
-                newGame.FirstPlayerId = "0";
+                newGame.InitialGameStateData = gameStateData;
+                newGame.CurrentGameStateData = gameStateData;
+                newGame.PlayerTurnRecord = new List<PlayerTurn> ();
 
-                if (gameStateData != String.Empty)
+                CreateGameResponse response = new CreateGameResponse();
+                response.Game  = newGame; 
+
+                if (gameStateData != null)
                 {
                     game.Add(newGame);
-                    return (ActionResult)new OkObjectResult(newGame);
+                    return (ActionResult)new OkObjectResult(response.Game);
                 } else {
-                    return new BadRequestObjectResult("Error Creating GameState");
+                    return new BadRequestObjectResult("Error Retrieving Initial GameStateData");
                 }
             }
             catch (TaskCanceledException taskEx)
@@ -100,11 +71,11 @@ namespace FourzyAzureFunctions
             {
                 log.LogError("Error Creating GameState: " + ex.ToString());
  
-                return new BadRequestObjectResult("Error Creating GameState");
+                return new BadRequestObjectResult("Error Retrieving Initial GameStateData");
             } 
         }
 
-        public static string GetOpponent(string playerId, string area) 
+        public static string GetOpponent(string playerId, Area area) 
         {
             // TODO: Create a collection in CosmosDb for the matchmaking pool
             // if player does not exist in matchmaking pool and turn-based games optin is on, add player to pool
@@ -113,9 +84,21 @@ namespace FourzyAzureFunctions
             // player optin to turn-based games is true
             // get player with oldest lastGameCreatedTimestamp
 
-            var opponentID = "";
+            var opponentID = "5372937FA3E72CF8";
 
             return opponentID;
         } 
+
+        public static Player CreateMockPlayer(int playerIndex, string playerId, string displayName) {
+            Player player = new Player(playerIndex, displayName);
+            player.PlayerString = playerId;
+            player.HerdId = "1";
+            player.Magic = 100;
+            player.SelectedArea = Area.TRAINING_GARDEN;
+            PlayerExperience pex2 = new PlayerExperience();
+            player.Experience = pex2;
+
+            return player;
+        }
     }
 }
